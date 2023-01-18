@@ -1,6 +1,7 @@
 package eu.skillcraft.beckpatterns.preparation;
 
-import eu.skillcraft.beckpatterns.preparation.PreparationService.NumberGenerator;
+import eu.skillcraft.beckpatterns.preparation.PreparationService.ContractNumber;
+import eu.skillcraft.beckpatterns.preparation.PreparationService.NumberFactory;
 import java.time.Clock;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,7 @@ class PreparationServiceTest {
   private AuthPort authPort = Mockito.mock(AuthPort.class);
   private SequencePort sequencePort;
   private ConfigPort configPort;
-  private PrefixPort prefixPort;
+  private CustomerPort prefixPort;
   private Clock clock;
 
   @Test
@@ -21,13 +22,13 @@ class PreparationServiceTest {
     Mockito.when(authPort.isAuditor()).thenReturn(false);
 
     // Given
-    NumberGenerator generator = new NumberGenerator(authPort, sequencePort, configPort, prefixPort, clock);
+    NumberFactory generator = new NumberFactory(authPort, sequencePort, configPort, prefixPort, clock);
 
     // When
-    String next = generator.next(ContractType.Acquisition);
+    ContractNumber next = generator.create(ContractType.Acquisition);
 
     // Then
-    Assertions.assertThat(next).isEqualTo("");
+    Assertions.assertThat(next).isEqualTo(new ContractNumber());
 
   }
 }

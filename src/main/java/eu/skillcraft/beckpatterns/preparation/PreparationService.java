@@ -3,17 +3,18 @@ package eu.skillcraft.beckpatterns.preparation;
 import java.time.Clock;
 import java.time.YearMonth;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @AllArgsConstructor
 public class PreparationService {
 
 
-  private final NumberGenerator generator;
+  private final NumberFactory numberFactory;
   private final ContractRepo repo;
 
   public void create(ContractType type) {
-    String number = generator.next(type);
+    ContractNumber number = numberFactory.create(type);
 
     Contract contract = new Contract(type, number);
 
@@ -21,19 +22,17 @@ public class PreparationService {
   }
 
   @RequiredArgsConstructor
-  static class NumberGenerator {
+  static class NumberFactory {
 
     private final AuthPort authPort;
     private final SequencePort sequencePort;
     private final ConfigPort configPort;
-    private final PrefixPort prefixPort;
+    private final CustomerPort custommerPort;
     private final Clock clock;
 
-    NumAlgo numAlgo = new NumAlgo();
+    public ContractNumber create(ContractType type) {
 
-    public ContractNumber next(ContractType type) {
-
-      return numAlgo.generateNumber(type, YearMonth.now(clock), sequencePort.next(), prefixPort.getPrefix(),
+      return new ContractNumber(type, YearMonth.now(clock), sequencePort.next(), custommerPort.getPrefix(),
           authPort.isAuditor(), configPort.isDemo());
     }
   }
@@ -43,7 +42,7 @@ public class PreparationService {
     private final ContractType type;
     private final ContractNumber number;
 
-    public Contract(ContractType type, ContractNumber number) {
+    public Contract(@NonNull ContractType type, @NonNull ContractNumber number) {
       this.type = type;
       this.number = number;
     }
@@ -57,7 +56,19 @@ public class PreparationService {
     }
   }
 
-  static class NumAlgo {
+  static class ContractNumber {
+
+    private final String number;
+    /*
+    STANDARD -> seq date demo
+    VIP -> prefix seq date demo
+    PREMIUM -> prefix seq date audit demo
+    GOLD -> typ prefix seq date audit demo
+     */
+    public ContractNumber(ContractType type, YearMonth now, Integer next, String prefix,
+        boolean auditor, boolean demo) {
+      number = generateNumber(type, now,next,prefix, auditor, demo);
+    }
 
     String generateNumber(ContractType type, YearMonth now, Integer next, String prefix1,
         boolean auditor, boolean demo) {
@@ -81,9 +92,6 @@ public class PreparationService {
 
       return number;
     }
-  }
-
-  private static class ContractNumber {
 
   }
 }
