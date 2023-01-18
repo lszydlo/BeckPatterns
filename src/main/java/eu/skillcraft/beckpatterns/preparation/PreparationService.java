@@ -12,11 +12,11 @@ public class PreparationService {
   private final NumberGenerator generator;
   private final ContractRepo repo;
 
-
   public void create(ContractType type) {
     String number = generator.next(type);
 
     Contract contract = new Contract(type, number);
+
     repo.save(contract);
   }
 
@@ -29,41 +29,21 @@ public class PreparationService {
     private final PrefixPort prefixPort;
     private final Clock clock;
 
-    public String next(ContractType type) {
+    NumAlgo numAlgo = new NumAlgo();
 
-      if(type == null) {
-        throw new IllegalArgumentException();
-      }
+    public ContractNumber next(ContractType type) {
 
-      YearMonth yearMonth = YearMonth.now(clock);
-
-      String number = type + " " + sequencePort + " " + yearMonth.getYear() + "/" + yearMonth.getMonthValue();
-
-      String prefix = prefixPort.getPrefix();
-
-      if(prefix != null && !prefix.isBlank()) {
-        number = prefix + " " + number;
-      }
-
-      if(authPort.isAuditor()) {
-        number =  number + "/AUDIT";
-      }
-
-      if(configPort.isDemo()) {
-        number =  "DEMO/" + number;
-      }
-
-      return number;
+      return numAlgo.generateNumber(type, YearMonth.now(clock), sequencePort.next(), prefixPort.getPrefix(),
+          authPort.isAuditor(), configPort.isDemo());
     }
   }
 
   static class Contract {
 
     private final ContractType type;
-    private final String number;
+    private final ContractNumber number;
 
-    public Contract(ContractType type, String number) {
-
+    public Contract(ContractType type, ContractNumber number) {
       this.type = type;
       this.number = number;
     }
@@ -75,5 +55,35 @@ public class PreparationService {
           ", number='" + number + '\'' +
           '}';
     }
+  }
+
+  static class NumAlgo {
+
+    String generateNumber(ContractType type, YearMonth now, Integer next, String prefix1,
+        boolean auditor, boolean demo) {
+      if(type == null) {
+        throw new IllegalArgumentException();
+      }
+
+      String number = type + " " + next + " " + now.getYear() + "/" + now.getMonthValue();
+
+      if(prefix1 != null && !prefix1.isBlank()) {
+        number = prefix1 + " " + number;
+      }
+
+      if(auditor) {
+        number =  number + "/AUDIT";
+      }
+
+      if(demo) {
+        number =  "DEMO/" + number;
+      }
+
+      return number;
+    }
+  }
+
+  private static class ContractNumber {
+
   }
 }
