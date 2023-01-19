@@ -65,6 +65,10 @@ public class PreparationService {
       return new ContractNumber(value);
     }
 
+    String getNumber() {
+      return number;
+    }
+
     private ContractNumber(String value) {
       this.number = value;
     }
