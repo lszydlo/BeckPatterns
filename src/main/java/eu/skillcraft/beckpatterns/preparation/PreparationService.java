@@ -2,6 +2,7 @@ package eu.skillcraft.beckpatterns.preparation;
 
 import java.time.Clock;
 import java.time.YearMonth;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class PreparationService {
     public ContractNumber create(ContractType type) {
 
       return new ContractNumber(type, YearMonth.now(clock), sequencePort.next(), custommerPort.getPrefix(),
-          authPort.isAuditor(), configPort.isDemo());
+          authPort.isAuditor(), configPort.isDemo(), custommerPort.getType());
     }
   }
 
@@ -63,34 +64,59 @@ public class PreparationService {
     STANDARD -> seq date demo
     VIP -> prefix seq date demo
     PREMIUM -> prefix seq date audit demo
-    GOLD -> typ prefix seq date audit demo
+    GOLD -> typ prefix seq date demo
      */
     public ContractNumber(ContractType type, YearMonth now, Integer next, String prefix,
-        boolean auditor, boolean demo) {
-      number = generateNumber(type, now,next,prefix, auditor, demo);
+        boolean auditor, boolean demo, CustomerType customerType) {
+
+      NumberBuilder builder = new NumberBuilder(now,next);
+
+      number = switch (customerType) {
+        case PREMIUM -> addAudit(auditor, addPrefix(prefix,addDemo(demo,getBasicNumb(now,next))));
+        case STANDARD -> builder.addDemo(demo).build();
+        case VIP -> builder.addPrefix(prefix).addDemo(demo).build();
+        case GOLD -> addType(type,addPrefix(prefix,addDemo(demo,getBasicNumb(now,next))));
+      };
+
     }
 
-    String generateNumber(ContractType type, YearMonth now, Integer next, String prefix1,
-        boolean auditor, boolean demo) {
-      if(type == null) {
-        throw new IllegalArgumentException();
-      }
+    private ContractNumber(String number) {
+      this.number = number;
+    }
 
-      String number = type + " " + next + " " + now.getYear() + "/" + now.getMonthValue();
 
-      if(prefix1 != null && !prefix1.isBlank()) {
-        number = prefix1 + " " + number;
-      }
 
-      if(auditor) {
-        number =  number + "/AUDIT";
-      }
 
-      if(demo) {
-        number =  "DEMO/" + number;
-      }
 
-      return number;
+    class NumberBuilder {
+
+
+      public NumberBuilder(YearMonth now, Integer next) {}
+
+
+
+    }
+
+
+
+    private String addType(ContractType type, String number) {
+      return type + " " + number;
+    }
+
+    private String addDemo(boolean demo, String number) {
+      return demo ? number + "/DEMO" : number;
+    }
+
+    private String addAudit(boolean auditor, String number) {
+      return auditor ? number + "/AUDIT" : number;
+    }
+
+    private String addPrefix(String prefix1, String number) {
+      return prefix1 != null && !prefix1.isBlank() ? prefix1 + " " + number : number;
+    }
+
+    private String getBasicNumb(YearMonth now, Integer next) {
+      return  next + " " + now.getYear() + "/" + now.getMonthValue();
     }
 
   }
